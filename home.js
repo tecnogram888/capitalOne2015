@@ -12,6 +12,7 @@ xhr.onloadend = function() {
     context.categoryMap = bucketCategories(context.allTransactions);
     context.categoryMetricsMap = {};
     renderTable(365);
+    renderPurchaseConsideration(context.categoryMap);
 
     document.getElementById('timeframe').onchange=function(e) {
     	switch(e.target.value) {
@@ -34,7 +35,32 @@ args = {"args": {"uid":  1110568334, "token":  "D0DB1D91A11E653436B622173E381F41
 //args = {"args": {"uid":  1110570164, "token":  "119947F2D985C3788998543A3D3AD90C", "api-token":  "HackathonApiToken"}}; // comfortable
 xhr.send(JSON.stringify(args));
 
-// ============ Render Helpers =======
+// ============ User Event Handlers =================
+
+function onSubmitInputItem() {
+	var cost = document.getElementById('inputCost').value;
+	var days = document.getElementById('inputDays').value;
+	var category = document.getElementById('inputCategory').value;
+
+	document.getElementById('considerations').innerHTML += '<td>' + category + '</td>' +
+		'<td>' + (context.categoryMetricsMap[category].annualAmortized /10000).toFixed(2) + '</td>' +
+		'<td>' + (cost*365/days).toFixed(2) + '</td>';
+}
+
+// ============ Render Helpers ==================
+
+var renderPurchaseConsideration = function(categoryMap) {
+	var pcHTML = 'Category of item: <select id="inputCategory">'
+	for (property in categoryMap)
+	{
+		pcHTML += '<option value="' + property + '">' + property + '</option>';
+	}
+	pcHTML += '</select><br>' + 'Cost of Item: <input id="inputCost" type="text" name="cost"><br>' +
+      'How Long will it Last in Days: <input id="inputDays" type="text" name="days"><br>' + 
+      '<input type="submit" value="Submit" onclick="onSubmitInputItem()">'
+
+  document.getElementById('inputItem').innerHTML = pcHTML;
+}
 
 var renderTable = function(timeframe)
 {
@@ -42,12 +68,12 @@ var renderTable = function(timeframe)
 	for (category in context.categoryMap)
 	{
 		context.categoryMetricsMap[category] = getCategoryMetrics(context.categoryMap[category], timeframe);
-		output += generateRow(category, context.categoryMetricsMap[category]);
+		output += generateTableRow(category, context.categoryMetricsMap[category]);
 	}
 	document.getElementById('list').innerHTML = output;
 }
 
-var generateRow = function(category, categoryMetrics)
+var generateTableRow = function(category, categoryMetrics)
 {
   var view = {
   	category: category,
@@ -78,6 +104,10 @@ var bucketCategories = function(allTransactions)
 	return map;
 }
 
+/**
+	* annualAmortized
+	* oldest/newestTimestamp
+	*/
 var getCategoryMetrics = function(transactionArray, timeframe)
 {
 	var categoryMetrics = {
@@ -105,8 +135,8 @@ var getCategoryMetrics = function(transactionArray, timeframe)
 	}
 	
 	// reformat data for output
-	categoryMetrics.annualAmortized = categoryMetrics.totalCentocents * 
-			(1000*60*60*24*timeframe / (categoryMetrics.newestTimestamp - categoryMetrics.oldestTimestamp));
+	categoryMetrics.annualAmortized = (categoryMetrics.totalCentocents * 
+			(1000*60*60*24*timeframe / (categoryMetrics.newestTimestamp - categoryMetrics.oldestTimestamp))).toFixed(2);
 	categoryMetrics.oldestTimestamp = new Date(categoryMetrics.oldestTimestamp);
 	categoryMetrics.newestTimestamp = new Date(categoryMetrics.newestTimestamp);
 	return categoryMetrics;
@@ -115,8 +145,5 @@ var getCategoryMetrics = function(transactionArray, timeframe)
 function numberWithCommas(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
-
-
-
 
 
