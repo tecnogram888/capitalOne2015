@@ -8,22 +8,56 @@ xhr.setRequestHeader('Content-Type', 'application/json');
 xhr.setRequestHeader('Accept', 'application/json');
 xhr.onloadend = function() {
     var parsed = JSON.parse(this.response);
-    var pretty = JSON.stringify(parsed, null, 2);
     context.allTransactions = parsed.transactions;
     context.categoryMap = bucketCategories(context.allTransactions);
     context.categoryMetricsMap = {};
-    for (category in context.categoryMap)
-    {
-    	context.categoryMetricsMap[category] = getCategoryMetrics(context.categoryMap[category]);
-    	context.output += generateRow(category, context.categoryMetricsMap[category]);
-    }
-    document.getElementById('list').innerHTML = context.output;
+    renderTable(365);
+
+    document.getElementById('timeframe').onchange=function(e) {
+    	switch(e.target.value) {
+    		case 'daily':
+    			return renderTable(1);
+    		case 'weekly':
+    			return renderTable(7);
+    		case 'monthly':
+    			return renderTable(31);
+    		case 'annually':
+    			return renderTable(365);
+    	}
+    };
 };
 xhr.onerror = function(err) {
     document.getElementById('outrpc19').textContent = "ugh an error. i can't handle this right now.";
 };
-args = {"args": {"uid":  1110568334, "token":  "D0DB1D91A11E653436B622173E381F41", "api-token":  "HackathonApiToken"}};
+args = {"args": {"uid":  1110568334, "token":  "D0DB1D91A11E653436B622173E381F41", "api-token":  "HackathonApiToken"}}; // default
+//args = {"args": {"uid":  1110570166, "token":  "63C08C4AA6E3CB1A4B13C9C5299365C0", "api-token":  "HackathonApiToken"}}; // struggling
+//args = {"args": {"uid":  1110570164, "token":  "119947F2D985C3788998543A3D3AD90C", "api-token":  "HackathonApiToken"}}; // comfortable
 xhr.send(JSON.stringify(args));
+
+// ============ Render Helpers =======
+
+var renderTable = function(timeframe)
+{
+	var output = "";
+	for (category in context.categoryMap)
+	{
+		context.categoryMetricsMap[category] = getCategoryMetrics(context.categoryMap[category], timeframe);
+		output += generateRow(category, context.categoryMetricsMap[category]);
+	}
+	document.getElementById('list').innerHTML = output;
+}
+
+var generateRow = function(category, categoryMetrics)
+{
+  var view = {
+  	category: category,
+  	burnRate: numberWithCommas((categoryMetrics.annualAmortized / 10000).toFixed(2))
+  };
+
+  return Mustache.render("<tr><td>Your rate of spending in </td><td>{{category}}</td><td> is </td><td>${{burnRate}}</td></tr>", view);
+}
+
+// ============== Backend Calculations =========
 
 var bucketCategories = function(allTransactions)
 {
@@ -44,7 +78,7 @@ var bucketCategories = function(allTransactions)
 	return map;
 }
 
-var getCategoryMetrics = function(transactionArray)
+var getCategoryMetrics = function(transactionArray, timeframe)
 {
 	var categoryMetrics = {
 		totalCentocents: 0,
@@ -72,20 +106,10 @@ var getCategoryMetrics = function(transactionArray)
 	
 	// reformat data for output
 	categoryMetrics.annualAmortized = categoryMetrics.totalCentocents * 
-			(1000*60*60*24*365 / (categoryMetrics.newestTimestamp - categoryMetrics.oldestTimestamp));
+			(1000*60*60*24*timeframe / (categoryMetrics.newestTimestamp - categoryMetrics.oldestTimestamp));
 	categoryMetrics.oldestTimestamp = new Date(categoryMetrics.oldestTimestamp);
 	categoryMetrics.newestTimestamp = new Date(categoryMetrics.newestTimestamp);
 	return categoryMetrics;
-}
-
-var generateRow = function(category, categoryMetrics)
-{
-  var view = {
-  	category: category,
-  	burnRate: numberWithCommas((categoryMetrics.annualAmortized / 10000).toFixed(2))
-  };
-
-  return Mustache.render("<li>Your rate of spending in {{category}} is ${{burnRate}}</li>", view);
 }
 
 function numberWithCommas(x) {
