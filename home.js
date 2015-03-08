@@ -38,13 +38,17 @@ xhr.send(JSON.stringify(args));
 // ============ User Event Handlers =================
 
 function onSubmitInputItem() {
+	var itemName = document.getElementById('inputName').value;
 	var cost = document.getElementById('inputCost').value;
 	var days = document.getElementById('inputDays').value;
 	var category = document.getElementById('inputCategory').value;
+	var itemAmortizedCost = (cost*365/days).toFixed(2);
 
-	document.getElementById('considerations').innerHTML += '<td>' + category + '</td>' +
+	document.getElementById('considerations').innerHTML += 
+		'<td>' + itemName + '</td>' +
+		'<td>' + category + '</td>' +
 		'<td>' + (context.categoryMetricsMap[category].annualAmortized /10000).toFixed(2) + '</td>' +
-		'<td>' + (cost*365/days).toFixed(2) + '</td>';
+		'<td>' + itemAmortizedCost + '</td>';
 }
 
 // ============ Render Helpers ==================
@@ -55,9 +59,11 @@ var renderPurchaseConsideration = function(categoryMap) {
 	{
 		pcHTML += '<option value="' + property + '">' + property + '</option>';
 	}
-	pcHTML += '</select><br>' + 'Cost of Item: <input id="inputCost" type="text" name="cost"><br>' +
-      'How Long will it Last in Days: <input id="inputDays" type="text" name="days"><br>' + 
-      '<input type="submit" value="Submit" onclick="onSubmitInputItem()">'
+	pcHTML += '</select><br>' + 
+		'Item Name: <input id="inputName" type="text" name="itemName"><br>' +
+		'Cost of Item: <input id="inputCost" type="text" name="cost"><br>' +
+    'How Long will it Last in Days: <input id="inputDays" type="text" name="days"><br>' + 
+    '<input type="submit" value="Submit" onclick="onSubmitInputItem()">'
 
   document.getElementById('inputItem').innerHTML = pcHTML;
 }
